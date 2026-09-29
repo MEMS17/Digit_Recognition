@@ -26,6 +26,7 @@ ASGI_APPLICATION = "config.asgi.application"
 DATABASES = {}
 MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://mongo:27017/")
 MONGODB_DATABASE = os.getenv("MONGODB_DATABASE", "postal_ocr")
+IA_SERVICE_URL = os.getenv("IA_SERVICE_URL", "http://ia:8001")
 
 LANGUAGE_CODE = "fr-fr"
 TIME_ZONE = "Europe/Paris"

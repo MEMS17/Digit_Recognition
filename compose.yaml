@@ -21,11 +21,14 @@ services:
       DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,back}
       MONGODB_URI: ${MONGODB_URI:-mongodb://mongo:27017}
       MONGODB_DATABASE: ${MONGODB_DATABASE:-postal_ocr}
+      IA_SERVICE_URL: ${IA_SERVICE_URL:-http://ia:8001}
     volumes:
       - ./back:/app
     depends_on:
       mongo:
         condition: service_healthy
+      ia:
+        condition: service_started
   ia:
     build: ./ia
     expose:
