@@ -97,3 +97,36 @@ Avant le premier entraînement, publier dans le rapport du projet le nombre de l
 par split, par statut d'étiquette, par provenance et par famille de mise en page.
 Ce comptage décrit la couverture réelle du corpus ; il ne remplace pas une mesure
 sur le test tenu à l'écart.
+
+## Corpus synthétique initial
+
+Le script `postal_ocr.generate_synthetic_postal_dataset` fournit un corpus local de
+zones `crop` entièrement fictives. Il génère des codes à cinq chiffres, des variations
+de fond, de taille, de flou et des cas `absent`, `illegible` et `ambiguous`. Il ne
+contient ni adresse, ni nom, ni courrier réel et ses annotations sont déterministes.
+
+```sh
+docker compose exec ia python -m postal_ocr.generate_synthetic_postal_dataset
+docker compose exec ia python -m postal_ocr.validate_postal_manifest \
+  --manifest data/postal/manifests/postal-synthetic-v1.jsonl \
+  --images-root data/postal/images \
+  --check-images
+```
+
+La génération par défaut produit 240 images train, 60 validation et 60 test. Le
+corpus est un support de développement pour la segmentation, pas une mesure de
+performance sur des courriers. Une évaluation représentative exigera le corpus
+fictif ou autorisé décrit plus haut, avec davantage de scripteurs et de dispositions.
+
+La première génération locale validée le 29 septembre 2026 contient :
+
+| Split | Codes annotés | Absents | Illisibles | Ambigus | Total |
+|---|---:|---:|---:|---:|---:|
+| Train | 205 | 11 | 12 | 12 | 240 |
+| Validation | 50 | 2 | 3 | 5 | 60 |
+| Test | 45 | 6 | 4 | 5 | 60 |
+| Total | 300 | 19 | 19 | 22 | 360 |
+
+Ces effectifs sont produits avec la graine `42`. Ils attestent uniquement de la
+validité du flux de données synthétique ; aucune métrique de reconnaissance postale
+ne doit être déduite de ce corpus avant l'entraînement et l'évaluation dédiés.

@@ -135,6 +135,16 @@ docker compose exec ia python -m postal_ocr.validate_postal_manifest \
 Le contrôle vérifie notamment les codes à cinq chiffres, les images, les rectangles
 et l'absence de fuite entre les splits train, validation et test.
 
+Un corpus local, fictif et reproductible de zones postales peut être généré pour le
+développement de la segmentation :
+
+```sh
+docker compose exec ia python -m postal_ocr.generate_synthetic_postal_dataset
+```
+
+Ses images et son manifeste restent dans `data/postal/`, hors Git. Il ne remplace
+pas le corpus de courriers autorisés nécessaire à l'évaluation du projet.
+
 ## Contrat avec les autres dossiers
 
 Le back recevra les images et orchestrera les requêtes. L'IA produira ultérieurement
