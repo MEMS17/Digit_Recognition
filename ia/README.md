@@ -119,6 +119,22 @@ docker compose exec ia python -m postal_ocr.evaluate_mnist_final
 Le détail reste dans `ia/models/mnist_final_evaluation_v1/results.json`, ignoré par
 Git. Le résumé validé est reporté dans `../docs/MODEL_RESULTS.md`.
 
+## Préparer le corpus de codes postaux
+
+Le contrat de collecte et d'annotation est décrit dans
+[`../docs/POSTAL_DATASET.md`](../docs/POSTAL_DATASET.md). Les courriers et leurs
+manifestes ne sont pas versionnés. Avant toute utilisation, valider le manifeste :
+
+```sh
+docker compose exec ia python -m postal_ocr.validate_postal_manifest \
+  --manifest data/postal/manifests/postal-v1.jsonl \
+  --images-root data/postal/images \
+  --check-images
+```
+
+Le contrôle vérifie notamment les codes à cinq chiffres, les images, les rectangles
+et l'absence de fuite entre les splits train, validation et test.
+
 ## Contrat avec les autres dossiers
 
 Le back recevra les images et orchestrera les requêtes. L'IA produira ultérieurement
