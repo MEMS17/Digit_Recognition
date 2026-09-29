@@ -186,6 +186,24 @@ artefacts restent dans `models/postal_pipeline_synthetic_v1/`, hors Git.
 Le résultat actuel et ses limites sont consignés dans
 [`../docs/POSTAL_PIPELINE.md`](../docs/POSTAL_PIPELINE.md).
 
+## Adapter le modèle aux chiffres postaux synthétiques
+
+Cette commande compare le CNN MNIST gelé et une version fine-tunée sur les chiffres
+annotés du train postal. La validation sert au choix ; `test` n'est pas chargé.
+
+```sh
+docker compose exec ia python -m postal_ocr.train_postal_digit_model \
+  --manifest data/postal/manifests/postal-synthetic-v1.jsonl \
+  --images-root data/postal/images
+```
+
+Les artefacts locaux sont écrits dans `models/postal_digit_synthetic_v1/`. Le modèle
+retenu devra être évalué séparément sur le split test avant de remplacer le CNN
+MNIST dans la chaîne de lecture.
+
+La comparaison validation et ses limites sont consignées dans
+[`../docs/POSTAL_MODEL_TRAINING.md`](../docs/POSTAL_MODEL_TRAINING.md).
+
 ## Contrat avec les autres dossiers
 
 Le back recevra les images et orchestrera les requêtes. L'IA produira ultérieurement

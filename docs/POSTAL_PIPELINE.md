@@ -33,6 +33,11 @@ même synthétiques. Le produit ne doit donc pas présenter une lecture comme fi
 ni activer l'acceptation automatique. Le détail des 32 erreurs de codes est conservé
 localement dans `ia/models/postal_pipeline_synthetic_v1/results.json`, hors Git.
 
+Un candidat adapté au corpus synthétique a depuis été entraîné et gelé sur
+validation, sans test. Ses résultats sont consignés dans
+[POSTAL_MODEL_TRAINING.md](POSTAL_MODEL_TRAINING.md) ; il ne remplace pas encore le
+CNN MNIST de cette évaluation.
+
 ## Suite nécessaire
 
 La prochaine itération doit entraîner ou adapter un reconnaisseur sur les chiffres
