@@ -12,7 +12,7 @@ Lire un code postal français de cinq chiffres sur une image de courrier. Conser
 - `docs/` : décisions, contrat API et planning commun.
 - `compose.yaml` : environnement Docker local partagé. Déploiement futur : collaborateur.
 
-Le front appelle `/api` ; Vite transmet au back sur le réseau Docker. MongoDB n'est pas exposé sur le poste. Le service IA sert actuellement d'espace de travail, sans serveur d'inférence. La cible décidée pour l'intégration est un service HTTP IA interne au réseau Docker : les dépendances scientifiques restent dans `ia/`, le back conserve l'API publique et la persistance. Cette évolution sera implémentée lors de l'intégration, sans changer le Compose pendant le cadrage.
+Le front appelle `/api` ; Vite transmet au back sur le réseau Docker. MongoDB n'est pas exposé sur le poste. Le service IA écoute maintenant sur le port interne 8001, sans publication sur le poste : les dépendances scientifiques restent dans `ia/`, le back conserve l'API publique et la persistance. L'appel du service IA par le back sera la prochaine intégration.
 
 ## Contrats de la prochaine réalisation
 

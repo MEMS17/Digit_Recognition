@@ -28,6 +28,8 @@ services:
         condition: service_healthy
   ia:
     build: ./ia
+    expose:
+      - "8001"
     environment:
       MONGODB_URI: ${MONGODB_URI:-mongodb://mongo:27017}
       MONGODB_DATABASE: ${MONGODB_DATABASE:-postal_ocr}

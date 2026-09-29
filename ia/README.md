@@ -215,6 +215,16 @@ docker compose exec ia python -m postal_ocr.evaluate_postal_pipeline \
 Cette commande charge par défaut le CNN adapté et écrit son résultat séparément de
 la baseline MNIST, dans `models/postal_pipeline_synthetic_adapted_v1/`.
 
+## Service d'inférence interne
+
+Le conteneur IA démarre désormais FastAPI sur `http://ia:8001`, uniquement sur le
+réseau Docker. Il expose `POST /internal/v1/infer/digit/` et
+`POST /internal/v1/infer/postal-code/`. Le second exige `input_kind=crop` ;
+`envelope` indique explicitement que la localisation n'est pas encore disponible.
+Le service valide les images PNG/JPEG, limite leur taille, applique EXIF et fond
+blanc, puis charge les modèles à la première requête. L'absence d'artefact retourne
+`503 model_unavailable` au lieu de lancer un entraînement.
+
 ## Contrat avec les autres dossiers
 
 Le back recevra les images et orchestrera les requêtes. L'IA produira ultérieurement

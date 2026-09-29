@@ -12,5 +12,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# Development workspace: run experiments explicitly with docker compose exec ia.
-CMD ["python", "-c", "import signal; signal.pause()"]
+# The inference API is reachable only from the Docker network on port 8001.
+CMD ["uvicorn", "postal_ocr.service:app", "--host", "0.0.0.0", "--port", "8001"]
