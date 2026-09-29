@@ -1,6 +1,19 @@
 # Plan Trello — lecture de codes postaux
 
-Responsables : **A = toi avec Codex (back + IA)** ; **B = collaborateur (front + déploiement)**. Chaque ligne représente une carte. Les priorités sont ordonnées P0 → P1 → P2 → P3 ; suivre les dépendances avant de commencer. Seule l'initialisation est réalisée à ce stade.
+Responsables : **A = toi avec Codex (back + IA)** ; **B = collaborateur (front + déploiement)**. Chaque ligne représente une carte. Les priorités sont ordonnées P0 → P1 → P2 → P3 ; suivre les dépendances avant de commencer. Le socle est initialisé et le cadrage technique est rédigé ; les fonctionnalités restent à implémenter.
+
+## Point d'avancement du cadrage
+
+- Carte 01 : initialisation réalisée et vérifiée dans Docker.
+- Carte 02 : périmètre et objectifs provisoires rédigés dans [POSTAL_SCOPE.md](POSTAL_SCOPE.md) et [EVALUATION.md](EVALUATION.md) ; aucune performance mesurée.
+- Carte 04 : [contrat API v1](API.md) prêt pour le développement et la relecture du collaborateur ; pas d'intégration réalisée.
+- Carte 05 : [schéma et procédure Atlas](MONGODB.md) documentés ; les collections MNIST et leurs index existent localement. Atlas et la collection `predictions` restent à configurer avec le back.
+- Carte 06 : import MNIST validé localement : 60 000 documents train, 10 000 documents test, pixels 28 × 28 et reprise sans doublon vérifiés. Les données vivent dans le volume Docker local et ne sont pas versionnées.
+- Carte 07 : notebook d'exploration exécuté depuis MongoDB : image avec label, chiffres 0 à 9, neuf écritures de 7 et représentants moyens produits dans `ia/notebooks/01_exploration_mnist.ipynb`.
+- Carte 08 : manifeste `mnist_train_val_v1` créé dans MongoDB : 50 000 entraînement, 10 000 validation, stratification par label et graine 42. Le test reste séparé.
+- Carte 11 : SVM RBF, Random Forest et CNN entraînés depuis MongoDB sur le même split. Les résultats de validation sont consignés dans [MODEL_RESULTS.md](MODEL_RESULTS.md) ; `mnist_test` reste intact.
+- Carte 12 : optimisation SVM par GridSearchCV et comparaison de trois réglages CNN terminées sur validation. Le CNN avec `lr=0.001` et dropout `0.25` est gelé ; `mnist_test` reste intact.
+- Prochaine réalisation proposée : carte 13, sérialiser le candidat gelé avec ses métadonnées de prétraitement, puis carte 14 pour son intégration dans l'API chiffre. L'évaluation finale sur `mnist_test` interviendra après ce gel, sans modification des réglages.
 
 Listes suggérées : À faire, Prêt, En cours, À relire, Terminé. Étiquettes : Back, IA, Front, Données, Déploiement, Documentation. Ajouter à chaque carte le responsable, la priorité, la dépendance et le critère d'acceptation ci-dessous.
 
