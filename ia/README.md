@@ -104,6 +104,21 @@ docker compose exec ia python -m postal_ocr.tune_mnist_models
 Les résultats et les artefacts sont conservés localement dans
 `ia/models/mnist_tuning_v1/`. Ils ne remplacent pas les baselines.
 
+## Évaluer le modèle gelé sur le test final
+
+Après le gel du candidat CNN, cette commande charge uniquement
+`mnist_test` et l'artefact retenu. Elle produit accuracy, F1 macro, métriques par
+classe, matrice de confusion, latence CPU et vingt-cinq premières erreurs. Le
+résultat est refusé si un résultat final local existe déjà, afin d'éviter de
+réutiliser le test sans décision explicite.
+
+```sh
+docker compose exec ia python -m postal_ocr.evaluate_mnist_final
+```
+
+Le détail reste dans `ia/models/mnist_final_evaluation_v1/results.json`, ignoré par
+Git. Le résumé validé est reporté dans `../docs/MODEL_RESULTS.md`.
+
 ## Contrat avec les autres dossiers
 
 Le back recevra les images et orchestrera les requêtes. L'IA produira ultérieurement

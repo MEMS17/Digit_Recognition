@@ -46,3 +46,25 @@ L'optimisation a également été réalisée sans accès au test. Le SVM a utili
 Le candidat est donc gelé : **CNN A** (`learning_rate=0.001`, `dropout=0.25`, batch 128, huit époques effectivement exécutées lors de la baseline). Son artefact validé est `ia/models/mnist_tuning_v1/cnn_tuned.keras`. Les comparaisons suivantes ne modifieront plus ses hyperparamètres avant l'évaluation unique sur `mnist_test`.
 
 L'optimisation n'a pas amélioré la baseline, ce qui est un résultat utile : elle confirme que le réglage initial est le meilleur parmi les options mesurées. Les artefacts locaux conservent le détail du GridSearch, les historiques CNN et les matrices de confusion.
+
+## Évaluation finale sur MNIST test
+
+Le 29 septembre 2026, le CNN gelé a été chargé sans nouvel entraînement et évalué une
+fois sur les 10 000 images de `mnist_test`. Le script a vérifié les effectifs, les
+identifiants et les dimensions avant l'inférence. L'artefact évalué a pour empreinte
+SHA-256 `21f8caaedcfcc9787c314f5a516cb33317d2b821f7b6dde421f51aff860e68ec`.
+
+| Modèle | Jeu | Accuracy | F1 macro | Erreurs | Latence p50 / p95 CPU |
+|---|---:|---:|---:|---:|---:|
+| CNN A gelé | 10 000 images test | **99,06 %** | **99,05 %** | 94 | 65,1 / 81,7 ms |
+
+Les confusions les plus fréquentes sont `8 → 0` (10 cas), `9 → 7` (7 cas), puis
+`6 → 0` et `4 → 9` (6 cas chacun). Ces résultats confirment le choix du CNN pour
+la reconnaissance de chiffres MNIST. Ils ne mesurent toutefois ni la localisation
+d'une zone postale, ni la segmentation de cinq chiffres, ni la robustesse aux
+photos de courriers réels. Ces sujets nécessitent leur propre jeu de données annoté
+et une évaluation de bout en bout.
+
+Le détail reproductible — rapport par classe, matrice de confusion, paramètres,
+latence et premiers exemples d'erreur — est conservé localement dans
+`ia/models/mnist_final_evaluation_v1/results.json`. Cet artefact est ignoré par Git.
