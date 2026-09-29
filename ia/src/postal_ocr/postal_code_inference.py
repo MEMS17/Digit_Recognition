@@ -66,12 +66,12 @@ def load_model(model_path: Path = MODEL_PATH) -> tf.keras.Model:
     return tf.keras.models.load_model(model_path)
 
 
-def predict_postal_code(image_path: Path, model: tf.keras.Model) -> dict:
+def predict_postal_code(image_path: Path, model: tf.keras.Model, model_version: str = MODEL_VERSION) -> dict:
     segmentation = segment_image(image_path)
     common = {
         "task": "postal_code",
         "image": segmentation["image"],
-        "model_version": MODEL_VERSION,
+        "model_version": model_version,
         "preprocessing_version": PREPROCESSING_VERSION,
         "reference_check": {"status": "not_checked", "version": None},
     }

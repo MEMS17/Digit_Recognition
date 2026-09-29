@@ -38,6 +38,31 @@ validation, sans test. Ses résultats sont consignés dans
 [POSTAL_MODEL_TRAINING.md](POSTAL_MODEL_TRAINING.md) ; il ne remplace pas encore le
 CNN MNIST de cette évaluation.
 
+## Évaluation finale du CNN adapté
+
+Le 29 septembre 2026, le candidat `postal-digit-synthetic-v1` a été évalué une fois
+sur ce même split test, sans réentraînement ni ajustement. Son artefact porte
+l'empreinte SHA-256
+`8324dc3192714be68b580c378506fa8151597f17c90493044859d50149fc9ec7`.
+
+| Mesure | CNN MNIST | CNN adapté |
+|---|---:|---:|
+| Précision par chiffre | 79,18 % | **100,00 %** |
+| Codes postaux entièrement exacts | 34,69 % (17 / 49) | **100,00 % (49 / 49)** |
+| Codes positifs illisibles | 0 % | 0 % |
+| Valeur proposée sur cas négatif | 18,18 % (2 / 11) | 18,18 % (2 / 11) |
+| Acceptation automatique | 0 % | 0 % |
+
+Le CNN adapté remplace donc le CNN MNIST comme candidat de lecture pour le corpus
+synthétique. Cette mesure ne valide toutefois pas la lecture de courriers : le test
+est produit par le même générateur que train et validation. Les faux découpages des
+cas négatifs sont inchangés, car ils viennent de la segmentation en amont. Toutes
+les réponses continuent d'exiger une révision humaine jusqu'à une calibration sur
+un corpus plus représentatif.
+
+Le détail de l'évaluation finale est conservé localement dans
+`ia/models/postal_pipeline_synthetic_adapted_v1/results.json`, hors Git.
+
 ## Suite nécessaire
 
 La prochaine itération doit entraîner ou adapter un reconnaisseur sur les chiffres

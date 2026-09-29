@@ -204,6 +204,17 @@ MNIST dans la chaîne de lecture.
 La comparaison validation et ses limites sont consignées dans
 [`../docs/POSTAL_MODEL_TRAINING.md`](../docs/POSTAL_MODEL_TRAINING.md).
 
+Après le gel du candidat, lancer son évaluation unique sur le test synthétique :
+
+```sh
+docker compose exec ia python -m postal_ocr.evaluate_postal_pipeline \
+  --manifest data/postal/manifests/postal-synthetic-v1.jsonl \
+  --images-root data/postal/images
+```
+
+Cette commande charge par défaut le CNN adapté et écrit son résultat séparément de
+la baseline MNIST, dans `models/postal_pipeline_synthetic_adapted_v1/`.
+
 ## Contrat avec les autres dossiers
 
 Le back recevra les images et orchestrera les requêtes. L'IA produira ultérieurement

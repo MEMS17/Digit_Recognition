@@ -31,3 +31,7 @@ validation proviennent du même générateur, avec une police et des variations 
 Le candidat n'est donc pas encore intégré au service de lecture ni autorisé à
 accepter automatiquement un code. L'étape suivante est son évaluation unique sur le
 split test synthétique, suivie d'une comparaison honnête avec le CNN MNIST.
+
+Cette évaluation finale est maintenant réalisée et décrite dans
+[POSTAL_PIPELINE.md](POSTAL_PIPELINE.md). Le candidat est retenu pour le corpus
+synthétique, avec révision humaine obligatoire.

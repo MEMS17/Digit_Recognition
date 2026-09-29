@@ -7,9 +7,10 @@ import json
 from datetime import UTC, datetime
 from pathlib import Path
 
-from postal_ocr.postal_code_inference import MODEL_PATH, file_sha256, load_model, predict_postal_code
+from postal_ocr.postal_code_inference import file_sha256, load_model, predict_postal_code
 
-OUTPUT_PATH = Path("models/postal_pipeline_synthetic_v1/results.json")
+ADAPTED_MODEL_PATH = Path("models/postal_digit_synthetic_v1/postal_digit_cnn.keras")
+OUTPUT_PATH = Path("models/postal_pipeline_synthetic_adapted_v1/results.json")
 
 
 def main() -> int:
@@ -17,6 +18,8 @@ def main() -> int:
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--images-root", type=Path, required=True)
     parser.add_argument("--split", choices=("train", "validation", "test"), default="test")
+    parser.add_argument("--model-path", type=Path, default=ADAPTED_MODEL_PATH)
+    parser.add_argument("--model-version", default="postal-digit-synthetic-v1")
     parser.add_argument("--force", action="store_true")
     args = parser.parse_args()
     if OUTPUT_PATH.exists() and not args.force:
@@ -27,10 +30,10 @@ def main() -> int:
     negatives = [record for record in selected if record["label_status"] != "labeled"]
     if not positives:
         raise RuntimeError("Le split évalué ne contient aucun code postal annoté")
-    model = load_model()
+    model = load_model(args.model_path)
     positive_results = []
     for record in positives:
-        prediction = predict_postal_code(args.images_root / record["image_path"], model)
+        prediction = predict_postal_code(args.images_root / record["image_path"], model, args.model_version)
         predicted_digits = prediction["value"] if prediction["value"] is not None else ""
         positive_results.append({
             "id": record["id"],
@@ -39,12 +42,12 @@ def main() -> int:
             "status": prediction["status"],
             "correct_digits": sum(expected == actual for expected, actual in zip(record["postal_code"], predicted_digits)),
         })
-    negative_results = [predict_postal_code(args.images_root / record["image_path"], model) for record in negatives]
+    negative_results = [predict_postal_code(args.images_root / record["image_path"], model, args.model_version) for record in negatives]
     result = {
-        "experiment_id": "postal_pipeline_synthetic_v1",
+        "experiment_id": "postal_pipeline_synthetic_adapted_v1",
         "created_at": datetime.now(UTC).isoformat(),
         "split": args.split,
-        "model": {"artifact": str(MODEL_PATH), "sha256": file_sha256(MODEL_PATH)},
+        "model": {"artifact": str(args.model_path), "sha256": file_sha256(args.model_path)},
         "positive_count": len(positives),
         "negative_count": len(negatives),
         "metrics": {
