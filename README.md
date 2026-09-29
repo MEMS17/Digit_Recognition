@@ -1,0 +1,59 @@
+# Digit Recognition — lecture de codes postaux
+
+Projet annuel : reconnaissance de chiffres manuscrits, puis lecture de codes postaux sur des courriers. **État : initialisation uniquement. Aucun modèle entraîné, aucune lecture d'image disponible.**
+
+## Organisation
+
+```text
+front/       React + TypeScript : interface — collaborateur
+back/        Django : API et persistance — toi + Codex
+ia/          Python : données, entraînement et OCR — toi + Codex
+docs/        Architecture et cartes Trello
+compose.yaml Environnement Docker de développement
+```
+
+- [Architecture et périmètre](docs/ARCHITECTURE.md)
+- [40 cartes Trello triées par priorité et assignées](docs/TRELLO.md)
+- [Front](front/README.md), [Back](back/README.md), [IA](ia/README.md)
+
+## Démarrage local
+
+Prérequis : Docker Desktop démarré en mode conteneurs Linux, avec Docker Compose. Exécuter les commandes depuis ce dossier.
+
+```powershell
+Copy-Item .env.example .env
+docker compose up --build -d
+docker compose ps
+```
+
+Ne recopier `.env.example` que lors de la première installation pour préserver les réglages existants. Les valeurs de secours permettent aussi un démarrage local sans `.env`.
+
+- Interface : http://localhost:5173
+- Santé API : http://localhost:8000/api/health/
+- Santé via proxy front : http://localhost:5173/api/health/
+
+```powershell
+docker compose logs -f
+docker compose exec back python manage.py check
+docker compose exec front npm run build
+docker compose exec ia python -c "import postal_ocr, sklearn, pymongo"
+docker compose stop
+```
+
+`docker compose down` retire les conteneurs et le réseau, mais conserve les volumes. Le volume MongoDB conserve les données. Ne pas utiliser `down -v` si ces données doivent être gardées.
+
+Les sources sont montées pour le développement. Après une modification de dépendances, reconstruire les images. Pour synchroniser le volume de dépendances front avec le lockfile : `docker compose exec front npm ci`.
+
+## Configuration
+
+Les variables sont décrites dans `.env.example`. Le navigateur passe par `/api`, sans URL interne Docker. Le proxy Vite cible `http://back:8000`.
+
+MongoDB local n'est exposé que sur le réseau Docker. Pour Atlas, renseigner `MONGODB_URI` et autoriser l'accès réseau dans Atlas. La création des collections et l'import MNIST seront réalisés après validation de ce socle. Aucun secret ni jeu de données ne doit être commité.
+
+## Collaboration et livraison
+
+Toi avec Codex : back et IA. Collaborateur : front et déploiement. Les agents travaillent dans des dossiers exclusifs, le coordinateur gère les fichiers communs. Les interfaces sont convenues avant les développements qui en dépendent. Aucun commit ni push automatique.
+
+Ce Compose est un environnement de développement ; la configuration de production est une étape dédiée. Les liens Trello, application déployée et présentation seront ajoutés lorsqu'ils existeront.
+
+**Point d'arrêt : attendre l'accord utilisateur avant l'import de données, l'entraînement ou le développement des fonctionnalités.**
