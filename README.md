@@ -1,6 +1,6 @@
 # Digit Recognition — lecture de codes postaux
 
-Projet annuel : reconnaissance de chiffres manuscrits, puis lecture de codes postaux sur des courriers. **État : initialisation uniquement. Aucun modèle entraîné, aucune lecture d'image disponible.**
+Projet annuel : reconnaissance de chiffres manuscrits, puis lecture de codes postaux sur des courriers. **État : socle initialisé et cadrage technique v1 rédigé. Aucun modèle entraîné, aucune lecture d'image disponible.**
 
 ## Organisation
 
@@ -13,6 +13,10 @@ compose.yaml Environnement Docker de développement
 ```
 
 - [Architecture et périmètre](docs/ARCHITECTURE.md)
+- [Contrat API pour le front et le back](docs/API.md)
+- [Schéma MongoDB et règles d'import](docs/MONGODB.md)
+- [Protocole d'évaluation IA](docs/EVALUATION.md)
+- [Périmètre des courriers et scénarios d'acceptation](docs/POSTAL_SCOPE.md)
 - [40 cartes Trello triées par priorité et assignées](docs/TRELLO.md)
 - [Front](front/README.md), [Back](back/README.md), [IA](ia/README.md)
 
@@ -48,7 +52,7 @@ Les sources sont montées pour le développement. Après une modification de dé
 
 Les variables sont décrites dans `.env.example`. Le navigateur passe par `/api`, sans URL interne Docker. Le proxy Vite cible `http://back:8000`.
 
-MongoDB local n'est exposé que sur le réseau Docker. Pour Atlas, renseigner `MONGODB_URI` et autoriser l'accès réseau dans Atlas. La création des collections et l'import MNIST seront réalisés après validation de ce socle. Aucun secret ni jeu de données ne doit être commité.
+MongoDB local n'est exposé que sur le réseau Docker. Pour Atlas, renseigner `MONGODB_URI` et autoriser l'accès réseau dans Atlas. L'import MNIST local se lance avec `docker compose exec ia python -m postal_ocr.mnist_import --download` ; il conserve les CSV et les données dans des emplacements ignorés par Git. Aucun secret ni jeu de données ne doit être commité.
 
 ## Collaboration et livraison
 
