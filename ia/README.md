@@ -163,6 +163,29 @@ docker compose exec ia python -m postal_ocr.evaluate_postal_segmentation \
 L'évaluation utilise uniquement le split test synthétique et mesure la détection de
 cinq chiffres, l'IoU des rectangles et les fausses segmentations des cas négatifs.
 
+## Lire une zone postale recadrée
+
+La chaîne charge le CNN MNIST gelé, transforme chaque rectangle segmenté en image
+28 × 28 à chiffres clairs sur fond sombre, prédit les cinq chiffres et conserve le
+score minimal. Toute valeur reste `needs_review` avec
+`acceptance_policy_unvalidated` : les sorties softmax ne sont pas encore calibrées
+pour être acceptées automatiquement.
+
+```sh
+docker compose exec ia python -m postal_ocr.predict_postal_code \
+  data/postal/images/postal-synthetic-v1/test/000300.png
+
+docker compose exec ia python -m postal_ocr.evaluate_postal_pipeline \
+  --manifest data/postal/manifests/postal-synthetic-v1.jsonl \
+  --images-root data/postal/images
+```
+
+La seconde commande mesure le code exact, la précision par chiffre et les valeurs
+proposées sur les cas négatifs, uniquement sur le split test synthétique. Ses
+artefacts restent dans `models/postal_pipeline_synthetic_v1/`, hors Git.
+Le résultat actuel et ses limites sont consignés dans
+[`../docs/POSTAL_PIPELINE.md`](../docs/POSTAL_PIPELINE.md).
+
 ## Contrat avec les autres dossiers
 
 Le back recevra les images et orchestrera les requêtes. L'IA produira ultérieurement
