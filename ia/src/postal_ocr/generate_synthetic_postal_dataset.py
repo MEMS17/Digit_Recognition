@@ -43,15 +43,24 @@ def create_background(rng: random.Random) -> Image.Image:
     return image
 
 
-def draw_code(image: Image.Image, code: str, rng: random.Random) -> dict[str, int]:
+def draw_code(image: Image.Image, code: str, rng: random.Random) -> tuple[dict[str, int], list[dict[str, int]]]:
     draw = ImageDraw.Draw(image)
     font = ImageFont.load_default(size=rng.randrange(42, 60))
     x = rng.randrange(70, 150)
     y = rng.randrange(55, 90)
-    left, top, right, bottom = draw.textbbox((x, y), code, font=font, stroke_width=1)
     ink = rng.randrange(0, 70)
-    draw.text((x, y), code, font=font, fill=(ink, ink, ink), stroke_width=1, stroke_fill=(ink, ink, ink))
-    return {"x": left, "y": top, "width": right - left, "height": bottom - top}
+    boxes: list[dict[str, int]] = []
+    cursor = x
+    for digit in code:
+        left, top, right, bottom = draw.textbbox((cursor, y), digit, font=font, stroke_width=1)
+        draw.text((cursor, y), digit, font=font, fill=(ink, ink, ink), stroke_width=1, stroke_fill=(ink, ink, ink))
+        boxes.append({"x": left, "y": top, "width": right - left, "height": bottom - top})
+        cursor = right + rng.randrange(3, 10)
+    left = min(box["x"] for box in boxes)
+    top = min(box["y"] for box in boxes)
+    right = max(box["x"] + box["width"] for box in boxes)
+    bottom = max(box["y"] + box["height"] for box in boxes)
+    return {"x": left, "y": top, "width": right - left, "height": bottom - top}, boxes
 
 
 def draw_negative(image: Image.Image, status: str, rng: random.Random) -> None:
@@ -74,15 +83,15 @@ def render_record(index: int, split: str, rng: random.Random, image_path: Path) 
     if status_roll < 0.82:
         label_status = "labeled"
         code = postal_code(rng)
-        bbox = draw_code(image, code, rng)
+        bbox, digit_bboxes = draw_code(image, code, rng)
     elif status_roll < 0.88:
-        label_status, code, bbox = "absent", None, None
+        label_status, code, bbox, digit_bboxes = "absent", None, None, None
         draw_negative(image, label_status, rng)
     elif status_roll < 0.94:
-        label_status, code, bbox = "illegible", None, None
+        label_status, code, bbox, digit_bboxes = "illegible", None, None, None
         draw_negative(image, label_status, rng)
     else:
-        label_status, code, bbox = "ambiguous", None, None
+        label_status, code, bbox, digit_bboxes = "ambiguous", None, None, None
         draw_negative(image, label_status, rng)
     if rng.random() < 0.35:
         image = image.filter(ImageFilter.GaussianBlur(radius=rng.uniform(0.15, 0.65)))
@@ -106,6 +115,7 @@ def render_record(index: int, split: str, rng: random.Random, image_path: Path) 
         "label_status": label_status,
         "postal_code": code,
         "postal_bbox": bbox,
+        "digit_bboxes": digit_bboxes,
     }
 
 

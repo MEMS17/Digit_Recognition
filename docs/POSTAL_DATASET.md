@@ -51,6 +51,11 @@ Champs obligatoires : `id`, `image_path`, `image_sha256`, `width`, `height`,
 `writer_id`, `layout_family`, `annotation_version`, `annotation_status`,
 `label_status`, `postal_code`, `postal_bbox`.
 
+Pour un corpus synthétique seulement, `digit_bboxes` peut compléter une ligne
+`labeled` avec les cinq rectangles, dans l'ordre de lecture. Ce champ est utilisé
+pour mesurer la segmentation ; il ne peut pas être renseigné pour une ligne
+non étiquetée.
+
 Valeurs admises :
 
 - `input_kind` : `crop` ou `envelope` ;
@@ -130,3 +135,8 @@ La première génération locale validée le 29 septembre 2026 contient :
 Ces effectifs sont produits avec la graine `42`. Ils attestent uniquement de la
 validité du flux de données synthétique ; aucune métrique de reconnaissance postale
 ne doit être déduite de ce corpus avant l'entraînement et l'évaluation dédiés.
+
+Les résultats de la segmentation de ce corpus sont consignés dans
+[POSTAL_SEGMENTATION.md](POSTAL_SEGMENTATION.md). Les rectangles individuels générés
+servent uniquement de référence technique : une annotation humaine distincte sera
+nécessaire pour le corpus de courriers autorisés.

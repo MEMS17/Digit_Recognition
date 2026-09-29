@@ -145,6 +145,24 @@ docker compose exec ia python -m postal_ocr.generate_synthetic_postal_dataset
 Ses images et son manifeste restent dans `data/postal/`, hors Git. Il ne remplace
 pas le corpus de courriers autorisés nécessaire à l'évaluation du projet.
 
+## Segmenter les cinq chiffres d'une zone recadrée
+
+La première segmentation détecte les composantes sombres et retourne cinq rectangles
+ordonnés de gauche à droite, ou un motif stable de révision (`no_digit_detected` ou
+`invalid_digit_count`). Elle ne reconnaît pas encore les chiffres.
+
+```sh
+docker compose exec ia python -m postal_ocr.segment_postal_code \
+  data/postal/images/postal-synthetic-v1/test/000300.png
+
+docker compose exec ia python -m postal_ocr.evaluate_postal_segmentation \
+  --manifest data/postal/manifests/postal-synthetic-v1.jsonl \
+  --images-root data/postal/images
+```
+
+L'évaluation utilise uniquement le split test synthétique et mesure la détection de
+cinq chiffres, l'IoU des rectangles et les fausses segmentations des cas négatifs.
+
 ## Contrat avec les autres dossiers
 
 Le back recevra les images et orchestrera les requêtes. L'IA produira ultérieurement

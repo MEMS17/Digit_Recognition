@@ -75,8 +75,15 @@ def validate_record(record: object, line_number: int) -> PurePosixPath:
         if not isinstance(record["postal_code"], str) or not CODE_PATTERN.fullmatch(record["postal_code"]):
             raise fail(line_number, "postal_code doit contenir exactement cinq chiffres pour une ligne labeled")
         validate_bbox(record["postal_bbox"], record["width"], record["height"], line_number)
+        if "digit_bboxes" in record:
+            if not isinstance(record["digit_bboxes"], list) or len(record["digit_bboxes"]) != 5:
+                raise fail(line_number, "digit_bboxes doit contenir les cinq rectangles des chiffres")
+            for digit_bbox in record["digit_bboxes"]:
+                validate_bbox(digit_bbox, record["width"], record["height"], line_number)
     elif record["postal_code"] is not None or record["postal_bbox"] is not None:
         raise fail(line_number, "postal_code et postal_bbox doivent être null hors d'une ligne labeled")
+    elif "digit_bboxes" in record and record["digit_bboxes"] is not None:
+        raise fail(line_number, "digit_bboxes doit être null hors d'une ligne labeled")
     return path
 
 
