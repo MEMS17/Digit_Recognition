@@ -1,61 +1,109 @@
-# Digit Recognition — lecture de codes postaux
+# Digit Recognition — Lecture de codes postaux
 
-Projet annuel : reconnaissance de chiffres manuscrits, puis lecture de codes postaux sur des courriers. Le dépôt contient une chaîne V1 : front React, API Django, service FastAPI IA et modèles expérimentés documentés. Le MVP lit une **zone postale déjà recadrée** ; la localisation automatique sur une enveloppe entière n'est pas encore disponible.
+## Présentation
 
-## Organisation
+Projet annuel IA / Big Data consacré à la reconnaissance de chiffres manuscrits et à la lecture de codes postaux de cinq chiffres.
+L'application web fonctionne sans authentification et permet de vérifier ou corriger les prédictions.
+
+Le MVP traite une **zone de code postal déjà recadrée**.
+La localisation automatique du code postal dans une enveloppe complète n'est pas encore implémentée.
+
+## Démo
+
+- Frontend : https://digit-recognition-zeta-six.vercel.app
+- API : https://api-digit.etsgsm.org
+- Health : https://api-digit.etsgsm.org/api/health/
+
+## Fonctionnalités
+
+- Dessin et reconnaissance d'un chiffre manuscrit.
+- Upload PNG/JPEG d'une zone postale recadrée.
+- Segmentation des cinq chiffres et lecture du code postal.
+- Affichage du score de confiance et des états de lecture.
+- Vérification et correction humaines.
+- Persistance des prédictions et corrections dans MongoDB.
+
+## Technologies
+
+| Composant | Technologies |
+|---|---|
+| Frontend | React, TypeScript, Vite, Vercel |
+| Backend | Django, Gunicorn, PyMongo, MongoDB Atlas |
+| IA | Python, TensorFlow/Keras, scikit-learn, MNIST, FastAPI |
+| Infrastructure | Docker, Docker Compose, Plesk/Nginx |
+
+## Architecture
 
 ```text
-front/       React + TypeScript : interface — collaborateur
-back/        Django : API et persistance — toi + Codex
-ia/          Python : données, entraînement et OCR — toi + Codex
-docs/        Architecture et cartes Trello
-compose.yaml Environnement Docker de développement
+Vercel
+  ↓ HTTPS
+Django / VPS Plesk
+  ├── MongoDB Atlas
+  ↓ réseau Docker
+FastAPI IA
+  ↓
+Modèles Keras locaux
 ```
 
-- [Architecture et périmètre](docs/ARCHITECTURE.md)
-- [Contrat API pour le front et le back](docs/API.md)
-- [Schéma MongoDB et règles d'import](docs/MONGODB.md)
-- [Protocole d'évaluation IA](docs/EVALUATION.md)
-- [Périmètre des courriers et scénarios d'acceptation](docs/POSTAL_SCOPE.md)
-- [40 cartes Trello triées par priorité et assignées](docs/TRELLO.md)
-- [Front](front/README.md), [Back](back/README.md), [IA](ia/README.md)
+Django expose l'API publique ; FastAPI reste accessible uniquement au backend.
 
-## Démarrage local
+## Résultats principaux
 
-Prérequis : Docker Desktop démarré en mode conteneurs Linux, avec Docker Compose. Exécuter les commandes depuis ce dossier.
+Résultats reproduits le **30 septembre 2026**.
 
-```powershell
-Copy-Item .env.example .env
+| Modèle MNIST | Accuracy |
+|---|---:|
+| SVM RBF — validation | 98,26 % |
+| Random Forest — validation | 96,80 % |
+| CNN baseline — validation | 98,91 % |
+| CNN optimisé — validation | 98,99 % |
+| CNN optimisé — test final | 99,18 % |
+
+Le F1 macro du CNN sur le test final MNIST est de **99,17 %**.
+
+Sur le dataset postal synthétique :
+
+- Détection des cinq chiffres : **100 %** ; IoU moyen : **0,812**.
+- Accuracy chiffre et code postal exact après adaptation : **100 %**.
+- Propositions erronées sur les exemples négatifs : **18,18 %**.
+- Acceptation automatique : **0 %** ; la lecture postale exige une vérification humaine.
+
+**Les résultats postaux à 100 % concernent uniquement le dataset synthétique et ne garantissent pas ces performances sur des courriers réels.**
+Les protocoles et limites sont détaillés dans [Résultats IA](docs/MODEL_RESULTS.md).
+
+## Lancement local
+
+Prérequis : Docker avec Docker Compose, en mode conteneurs Linux.
+Depuis la racine du dépôt :
+
+```sh
 docker compose up --build -d
 docker compose ps
 ```
 
-Ne recopier `.env.example` que lors de la première installation pour préserver les réglages existants. Les valeurs de secours permettent aussi un démarrage local sans `.env`.
+- Interface : http://localhost:5173
+- API : http://localhost:8000/api/health/
 
-- Interface : http://localhost:5173 (mocks activables par `VITE_USE_MOCKS=true`)
-- Santé API : http://localhost:8000/api/health/
-- Santé via proxy front : http://localhost:5173/api/health/
+Les modèles ne sont pas inclus dans Git.
+L'inférence nécessite les deux fichiers Keras indiqués dans le guide de déploiement, placés localement sous `ia/models/`.
 
-```powershell
-docker compose logs -f
-docker compose exec back python manage.py check
-docker compose exec front npm run build
-docker compose exec ia python -c "import postal_ocr, sklearn, pymongo"
-docker compose stop
+Commandes principales pour préparer MNIST, comparer les modèles et sélectionner le CNN :
+
+```sh
+docker compose exec ia python -m postal_ocr.mnist_import --download
+docker compose exec ia python -m postal_ocr.mnist_split
+docker compose exec ia python -m postal_ocr.train_mnist_models
+docker compose exec ia python -m postal_ocr.tune_mnist_models
+docker compose exec ia python -m postal_ocr.evaluate_mnist_final
 ```
 
-`docker compose down` retire les conteneurs et le réseau, mais conserve les volumes. Le volume MongoDB conserve les données. Ne pas utiliser `down -v` si ces données doivent être gardées.
+Ces commandes s'exécutent explicitement : aucun entraînement ne démarre avec l'application.
 
-Les sources sont montées pour le développement. Après une modification de dépendances, reconstruire les images. Pour synchroniser le volume de dépendances front avec le lockfile : `docker compose exec front npm ci`.
+## Documentation
 
-## Configuration
+- [Architecture](docs/ARCHITECTURE.md)
+- [API](docs/API.md)
+- [Résultats IA](docs/MODEL_RESULTS.md)
+- [Déploiement](docs/DEPLOYMENT.md)
 
-Les variables sont décrites dans `.env.example`. Le navigateur passe par `/api`, sans URL interne Docker. Le proxy Vite cible `http://back:8000`.
-
-MongoDB local n'est exposé que sur le réseau Docker. Pour Atlas, renseigner `MONGODB_URI` et autoriser l'accès réseau dans Atlas. L'import MNIST local se lance avec `docker compose exec ia python -m postal_ocr.mnist_import --download` ; il conserve les CSV et les données dans des emplacements ignorés par Git. Aucun secret ni jeu de données ne doit être commité.
-
-## Collaboration et livraison
-
-Toi avec Codex : back et IA. Collaborateur : front et déploiement. Les agents travaillent dans des dossiers exclusifs, le coordinateur gère les fichiers communs. Les interfaces sont convenues avant les développements qui en dépendent. Aucun commit ni push automatique.
-
-Ce Compose est un environnement de développement. La production recommandée est décrite dans [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) : Vercel pour le front, VPS Plesk pour Django et l'IA interne, fichiers modèles locaux sur le VPS et Atlas pour les données. La configuration Hugging Face est conservée comme alternative non utilisée.
+Gestion de projet : https://trello.com/b/jjTZnIxU

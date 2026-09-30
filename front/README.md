@@ -1,11 +1,21 @@
 # Frontend
 
-Responsable : collaborateur — interface React, TypeScript et Vite.
+## Développement hors Docker
 
-Lancement recommandé depuis la racine du dépôt avec Docker Compose. Le serveur de développement écoute sur `0.0.0.0:5173`. Ce conteneur sert uniquement au développement ; la construction et le service de production seront préparés dans la phase de déploiement.
+Depuis `front/` :
 
-Les appels navigateur à `/api/` sont transmis au backend par le proxy Vite, sans réécriture de chemin. `API_PROXY_TARGET` vaut `http://back:8000` par défaut et se configure côté serveur, sans exposer de secret au navigateur. En dehors de Docker, utiliser `API_PROXY_TARGET=http://localhost:8000`.
+```sh
+npm ci
+npm run dev
+npm run build
+```
 
-Commandes : `npm ci`, `npm run dev`, `npm run build`. Le build vérifie TypeScript et génère `dist/`.
+Le build vérifie TypeScript et génère `dist/`.
+Pour joindre Django localement, définir `API_PROXY_TARGET=http://localhost:8000`
+dans l'environnement du serveur Vite ; dans Docker, la cible est `http://back:8000`.
 
-L’interface propose l’import d’une **zone postale recadrée** (PNG/JPEG, 5 MiB maximum), le dessin d’un chiffre, les résultats, la revue humaine et les états d’erreur. Elle utilise les mocks uniquement avec `VITE_USE_MOCKS=true`; avec `VITE_USE_MOCKS=false`, elle appelle l’API V1 via `/api/v1/predictions/`.
+`VITE_API_BASE_URL` définit la base publique de l'API, avec `/api` par défaut.
+`VITE_USE_MOCKS=true` active les données de démonstration ; la production utilise `false`.
+Aucun secret ne doit être placé dans une variable `VITE_*`, intégrée au JavaScript public.
+
+La configuration Vercel est décrite dans [Déploiement](../docs/DEPLOYMENT.md).

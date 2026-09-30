@@ -1,70 +1,115 @@
-# Résultats des baselines MNIST — validation uniquement
+# Résultats IA
 
-Exécution locale Docker du 29 septembre 2026. Ces résultats comparent trois premiers modèles, mais ne constituent pas encore l'évaluation finale : `mnist_test` n'a jamais été chargé par le script d'entraînement. Les modèles utilisent exactement le manifeste `mnist_train_val_v1` : 50 000 images pour l'entraînement et 10 000 pour la validation, réparties de façon stratifiée avec la graine 42.
+Résultats reproduits le **30 septembre 2026**.
+Les mesures MNIST et postales portent sur des jeux distincts et ne sont pas interchangeables.
 
-## Prétraitement commun
+## Dataset MNIST
 
-Les 784 pixels uint8 sont lus depuis MongoDB, convertis en `float32`, puis normalisés par division par 255. Aucune augmentation, optimisation par grille ni donnée de test n'a été utilisée pendant cette baseline.
+MNIST contient des images de chiffres manuscrits 28 × 28 :
+60 000 images train et 10 000 images test.
 
-## Comparaison
+| Partition | Effectif | Utilisation |
+|---|---:|---|
+| Entraînement | 50 000 | Apprentissage |
+| Validation | 10 000 | Comparaison et sélection |
+| Test final | 10 000 | Évaluation après sélection |
 
-| Modèle | Paramètres baseline | Accuracy validation | F1 macro | Entraînement CPU | Latence unitaire p50 / p95 CPU | Taille artefact |
-|---|---|---:|---:|---:|---:|---:|
-| SVM RBF | `C=10`, `gamma=scale` | **98,26 %** | 98,25 % | 223,8 s | **11,0 / 15,5 ms** | 67,0 Mo |
-| Random Forest | 200 arbres, `max_features=sqrt` | 96,80 % | 96,79 % | **37,1 s** | 78,4 / 132,6 ms | 249,4 Mo |
-| CNN | Conv32 → Pool → Conv64 → Pool → Dense128 → Dropout, 8 époques max | **98,87 %** | **98,86 %** | 173,2 s | 85,6 / 116,2 ms | **2,7 Mo** |
+Le split train/validation est stratifié, avec graine 42.
+Les pixels sont lus depuis MongoDB et normalisés par division par 255.
+Le test n'a été utilisé qu'après sélection du modèle.
 
-La latence est une mesure locale, CPU, batch 1, sur 100 appels successifs. Elle inclut le coût du framework : elle sert à comparer ce même environnement et non à annoncer une latence de production. Le CNN a atteint 98,87 % après huit époques ; l'arrêt anticipé n'a pas été déclenché avant la limite prévue.
+## Baselines sur validation
 
-## Premières erreurs observées
+| Modèle | Accuracy |
+|---|---:|
+| SVM RBF | 98,26 % |
+| Random Forest | 96,80 % |
+| CNN baseline | 98,91 % |
 
-Les matrices de confusion complètes sont présentes dans l'artefact local `ia/models/mnist_baseline_v1/results.json`. Sur validation :
+Le CNN est retenu pour la suite : il obtient le meilleur résultat parmi ces baselines.
 
-- Le SVM confond surtout `7 → 2` (10 cas) et `3 → 8` (9 cas).
-- La Random Forest confond surtout `3 → 8` (17 cas), `3 → 2` (12 cas) et `7 → 2` (11 cas).
-- Le CNN réduit ces confusions ; son erreur la plus fréquente est `8 → 1` (7 cas).
+## Optimisation du CNN
 
-Ces exemples montrent que les écritures proches et certaines formes ambiguës restent difficiles. Ils ne permettent pas encore de conclure sur des dessins de canvas ou des codes postaux manuscrits : MNIST ne représente ni les images de courriers ni leur bruit ou leur mise en page.
+| Paramètre | Valeur retenue |
+|---|---|
+| learning_rate | 0.001 |
+| dropout | 0.25 |
+| batch_size | 128 |
+| epochs maximum | 10 |
+| early stopping patience | 2 |
 
-## Décision provisoire
+Accuracy de validation du CNN optimisé : **98,99 %**.
 
-Le CNN est le candidat principal à optimiser grâce à sa meilleure accuracy et à son artefact très compact. Le SVM reste un candidat sérieux pour un déploiement CPU à faible latence. La Random Forest est conservée comme point de comparaison, mais n'est pas prioritaire pour l'optimisation à cause de sa performance inférieure, sa latence et sa taille.
+## Test final MNIST
 
-Avant de sélectionner un modèle final : définir des espaces d'hyperparamètres, optimiser les candidats sur validation, geler le choix, puis évaluer une seule fois sur `mnist_test`. Les poids et résultats techniques sont volontairement ignorés par Git ; ils devront être archivés avec leurs empreintes lors de la livraison.
+| Mesure | Résultat |
+|---|---:|
+| Accuracy | **99,18 %** |
+| F1 macro | **99,17 %** |
 
-## Optimisation v1 et gel du candidat
+Ces scores mesurent la reconnaissance de chiffres MNIST,
+pas la lecture de photographies d'enveloppes.
 
-L'optimisation a également été réalisée sans accès au test. Le SVM a utilisé un `GridSearchCV` à trois folds sur un sous-échantillon stratifié de 10 000 images du train, puis le meilleur réglage a été réentraîné sur les 50 000 images. Les CNN ont été comparés directement sur la validation externe.
+## Adaptation postale
 
-| Candidat | Réglage | Accuracy validation | F1 macro | Observations |
-|---|---|---:|---:|---|
-| SVM optimisé | `C=3`, `gamma=scale` | 98,20 % | 98,19 % | meilleur score CV : 96,13 % ; inférieur à la baseline SVM sur validation |
-| CNN A | `lr=0,001`, dropout `0,25` | **98,87 %** | **98,86 %** | meilleur candidat, identique à la baseline CNN |
-| CNN B | `lr=0,0005`, dropout `0,15` | 98,80 % | 98,79 % | légèrement inférieur |
-| CNN C | `lr=0,0005`, dropout `0,35` | 98,84 % | 98,83 % | légèrement inférieur |
+Le dataset `postal-synthetic-v1` contient **360 images** :
+240 train, 60 validation et 60 test.
+Il combine des codes de cinq chiffres, des variations de fond, taille et flou,
+ainsi que des exemples négatifs.
+Le test comporte 49 zones positives et 11 cas négatifs.
 
-Le candidat est donc gelé : **CNN A** (`learning_rate=0.001`, `dropout=0.25`, batch 128, huit époques effectivement exécutées lors de la baseline). Son artefact validé est `ia/models/mnist_tuning_v1/cnn_tuned.keras`. Les comparaisons suivantes ne modifieront plus ses hyperparamètres avant l'évaluation unique sur `mnist_test`.
+La segmentation isole les composantes sombres et les trie de gauche à droite.
+Les chiffres sont centrés et normalisés en 28 × 28 avant classification.
+Les annotations de référence servent à l'entraînement et à l'évaluation ;
+la lecture utilise les rectangles calculés par la segmentation.
 
-L'optimisation n'a pas amélioré la baseline, ce qui est un résultat utile : elle confirme que le réglage initial est le meilleur parmi les options mesurées. Les artefacts locaux conservent le détail du GridSearch, les historiques CNN et les matrices de confusion.
+### Segmentation sur le test synthétique
 
-## Évaluation finale sur MNIST test
+| Mesure | Résultat |
+|---|---:|
+| five_digit_detection_rate | 100 % |
+| mean_digit_iou | 0,8119 |
+| all_digits_iou ≥ 0.5 | 100 % |
+| negative_false_segmentation_rate | 18,18 % (2 / 11) |
 
-Le 29 septembre 2026, le CNN gelé a été chargé sans nouvel entraînement et évalué une
-fois sur les 10 000 images de `mnist_test`. Le script a vérifié les effectifs, les
-identifiants et les dimensions avant l'inférence. L'artefact évalué a pour empreinte
-SHA-256 `21f8caaedcfcc9787c314f5a516cb33317d2b821f7b6dde421f51aff860e68ec`.
+L'IoU mesure le recouvrement entre rectangle prédit et rectangle de référence.
 
-| Modèle | Jeu | Accuracy | F1 macro | Erreurs | Latence p50 / p95 CPU |
-|---|---:|---:|---:|---:|---:|
-| CNN A gelé | 10 000 images test | **99,06 %** | **99,05 %** | 94 | 65,1 / 81,7 ms |
+### Reconnaissance avant et après adaptation
 
-Les confusions les plus fréquentes sont `8 → 0` (10 cas), `9 → 7` (7 cas), puis
-`6 → 0` et `4 → 9` (6 cas chacun). Ces résultats confirment le choix du CNN pour
-la reconnaissance de chiffres MNIST. Ils ne mesurent toutefois ni la localisation
-d'une zone postale, ni la segmentation de cinq chiffres, ni la robustesse aux
-photos de courriers réels. Ces sujets nécessitent leur propre jeu de données annoté
-et une évaluation de bout en bout.
+| Modèle sur validation postale synthétique | Accuracy | F1 macro |
+|---|---:|---:|
+| CNN MNIST avant adaptation | 81,22 % | 73,48 % |
+| CNN après adaptation postale | 100 % | 100 % |
 
-Le détail reproductible — rapport par classe, matrice de confusion, paramètres,
-latence et premiers exemples d'erreur — est conservé localement dans
-`ia/models/mnist_final_evaluation_v1/results.json`. Cet artefact est ignoré par Git.
+Le CNN postal est adapté à partir du CNN MNIST, avec entraînement et sélection
+sur les partitions train et validation postales.
+Le test postal n'intervient pas dans le réglage.
+
+### Pipeline adapté sur le test synthétique
+
+| Mesure | Résultat |
+|---|---:|
+| digit_accuracy | 100 % |
+| exact_postal_code_accuracy | 100 % (49 / 49) |
+| unreadable_positive_rate | 0 % |
+| negative_proposed_value_rate | 18,18 % (2 / 11) |
+| automatic_acceptance_rate | 0 % |
+
+Le code est exact seulement si les cinq chiffres sont corrects.
+Une proposition complète conserve l'état `needs_review`.
+Le score du code est le minimum des scores de ses chiffres.
+
+## Limites
+
+Les performances postales sont mesurées sur des données synthétiques issues du même générateur.
+Elles ne prouvent pas 100 % de performance sur du courrier réel.
+La diversité des écritures, fonds et conditions photographiques reste limitée.
+
+Deux cas négatifs sur onze produisent encore une proposition.
+L'adaptation améliore la classification mais ne supprime pas ces erreurs de segmentation.
+La vérification humaine reste nécessaire ; les scores ne sont pas calibrés.
+
+Les modèles et rapports détaillés restent hors Git sous `ia/models/` :
+`mnist_baseline_v1`, `mnist_tuning_v1`, `mnist_final_evaluation_v1`,
+`postal_segmentation_synthetic_v1`, `postal_digit_synthetic_v1`
+et `postal_pipeline_synthetic_adapted_v1`.

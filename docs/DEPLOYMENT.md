@@ -1,96 +1,124 @@
-# Déploiement production : Vercel + VPS Plesk + Atlas
+# Déploiement
 
-L'architecture recommandée sert le front React/Vite depuis Vercel. Le VPS Plesk exécute uniquement Django/Gunicorn et le service FastAPI IA dans Docker ; Plesk/Nginx termine HTTPS et relaie les requêtes API vers Django. MongoDB est fourni par Atlas et les modèles `.keras` restent des fichiers locaux hors Git sur le VPS.
-
-```text
-Vercel (React/Vite) --HTTPS--> Plesk/Nginx --HTTP local--> Django :8086
-                                                    |
-                                                    | réseau Docker
-                                                    v
-                                             FastAPI IA :8001
-                                                    |
-                                                    v
-                                             MongoDB Atlas
-```
-
-FastAPI n'est jamais publié sur Internet. Le navigateur appelle uniquement `https://<backend-public>/api`; Django joint l'IA via `IA_SERVICE_URL=http://ia:8001`.
-
-## Préparer le VPS
-
-Installer Docker Engine et Docker Compose Plugin sur le VPS. Créer les artefacts modèles en dehors du dépôt avec la structure exacte suivante :
+Le frontend est hébergé sur Vercel.
+Django et FastAPI IA s'exécutent sur un VPS Plesk avec Docker.
+MongoDB Atlas conserve les données ; les modèles Keras sont des fichiers locaux du VPS.
 
 ```text
-/srv/digit-recognition/models/
-├── mnist_tuning_v1/cnn_tuned.keras
-└── postal_digit_synthetic_v1/postal_digit_cnn.keras
+Vercel
+  ↓ HTTPS : api-digit.etsgsm.org
+Cloudflare
+  ↓
+Plesk/Nginx
+  ↓ HTTP : 127.0.0.1:8086
+Django
+  ├── MongoDB Atlas
+  ↓ réseau Docker
+FastAPI IA :8001
+  ↓
+Modèles Keras locaux, en lecture seule
 ```
 
-Ne pas copier ces fichiers dans Git ni dans l'image Docker. Le service IA les reçoit en lecture seule sur `/app/models` via `MODEL_DIR_HOST=/srv/digit-recognition/models`. Leur absence ne déclenche aucun entraînement et produit `503 model_unavailable` à l'inférence concernée.
+## Installation
 
-Copier `deploy/production.env.example` vers `.env.production`, sans versionner ce fichier, puis renseigner :
+Installer Docker Engine et Docker Compose sur le VPS.
+Faire pointer le domaine backend via Cloudflare vers le VPS.
+Configurer le certificat HTTPS dans Plesk et utiliser Cloudflare en mode Full (strict).
+TLS est géré en dehors des conteneurs.
+
+Placer les deux modèles avec les droits de lecture nécessaires :
 
 ```text
-DJANGO_SECRET_KEY=<secret-long-et-aleatoire>
-DJANGO_ALLOWED_HOSTS=<backend-public>
-MONGODB_URI=<uri-atlas>
-MONGODB_DATABASE=postal_ocr
-CORS_ALLOWED_ORIGINS=https://<frontend>.vercel.app
-MODEL_DIR_HOST=/srv/digit-recognition/models
+/srv/digit-recognition/models/mnist_tuning_v1/cnn_tuned.keras
+/srv/digit-recognition/models/postal_digit_synthetic_v1/postal_digit_cnn.keras
 ```
 
-`DJANGO_DEBUG` est fixé à `false` dans `compose.production.yaml`. Django fait confiance à `X-Forwarded-Proto: https` transmis par Plesk grâce à `SECURE_PROXY_SSL_HEADER`; aucun certificat TLS n'est géré par Docker. Les endpoints de prédiction et de revue restent `csrf_exempt`, conformément au contrat API existant.
+Ils sont montés en lecture seule dans `/app/models`.
+Ils ne sont ni inclus dans Git ni copiés dans l'image.
+Aucun entraînement ne démarre avec les services.
 
-## Démarrer les services Docker
+## Variables VPS
+
+Copier `deploy/production.env.example` vers `.env.production`, ignoré par Git.
+Renseigner les valeurs réelles uniquement sur le VPS :
+
+| Variable | Valeur |
+|---|---|
+| `DJANGO_SECRET_KEY` | Secret long et aléatoire |
+| `DJANGO_ALLOWED_HOSTS` | `api-digit.etsgsm.org,127.0.0.1` |
+| `MONGODB_URI` | URI privée MongoDB Atlas |
+| `MONGODB_DATABASE` | `postal_ocr` |
+| `CORS_ALLOWED_ORIGINS` | `https://digit-recognition-zeta-six.vercel.app` |
+| `MODEL_DIR_HOST` | `/srv/digit-recognition/models` |
+
+Autoriser l'adresse de sortie du VPS dans Atlas et fournir un compte limité à la base utilisée.
+`127.0.0.1` permet les contrôles de santé locaux.
+Le compose impose `DJANGO_DEBUG=false` et `IA_SERVICE_URL=http://ia:8001`.
+Les origines CORS sont explicites, sans joker.
+
+## Commandes Docker Compose
 
 Depuis la racine du dépôt sur le VPS :
 
 ```sh
+docker compose --env-file .env.production -f compose.production.yaml config --quiet
 docker compose --env-file .env.production -f compose.production.yaml build
 docker compose --env-file .env.production -f compose.production.yaml up -d
 docker compose --env-file .env.production -f compose.production.yaml ps
-curl -f http://127.0.0.1:8086/api/health/
-curl -f http://127.0.0.1:8086/api/health/ready/
+docker compose --env-file .env.production -f compose.production.yaml logs -f
 ```
 
-Le compose de production ne contient que `back` et `ia`. Django/Gunicorn est lié à `127.0.0.1:8086` sur l'hôte ; FastAPI utilise uniquement `expose: 8001` sur le réseau Docker.
+Le compose production contient uniquement `back` et `ia`.
+Django est publié sur `127.0.0.1:8086:8000`.
+Le port IA `8001` reste interne ; le frontend n'est pas hébergé sur le VPS.
+Après modification des variables, relancer `up -d` pour recréer les services concernés.
 
-## Configurer Plesk / Nginx
+## Configuration Plesk / Nginx
 
-Créer un domaine ou sous-domaine backend, par exemple `api.postal.example.fr`, activer son certificat HTTPS dans Plesk, puis ajouter les directives Nginx suivantes dans la configuration du domaine (champ **Additional Nginx directives** ou équivalent) :
+Dans les directives Nginx supplémentaires du domaine backend :
 
 ```nginx
-location / {
+location /api/ {
     proxy_pass http://127.0.0.1:8086;
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     proxy_set_header X-Forwarded-Proto https;
+    proxy_http_version 1.1;
+    proxy_read_timeout 60s;
+    client_max_body_size 6m;
 }
 ```
 
-Plesk reste responsable du certificat, de la redirection HTTP vers HTTPS et de l'exposition publique. Ne pas ouvrir le port `8086` dans le pare-feu : il est lié à `127.0.0.1` uniquement. Après propagation DNS, vérifier :
+Utiliser `location /api/` : Plesk génère déjà `location /`.
+Plesk gère le certificat et la redirection HTTP vers HTTPS.
+Django reconnaît HTTPS via `SECURE_PROXY_SSL_HEADER`.
+L'en-tête `Host` est transmis directement ; `USE_X_FORWARDED_HOST` n'est pas nécessaire.
 
-```sh
-curl -f https://<backend-public>/api/health/
-curl -f https://<backend-public>/api/health/ready/
-```
+## Configuration Vercel
 
-## Déployer le front sur Vercel
+- Root Directory : `front`.
+- Framework Preset : `Vite`.
+- Conserver `front/vercel.json` pour le fallback SPA.
 
-Importer le dépôt sur Vercel avec :
-
-- **Root Directory** : `front`
-- **Framework Preset** : `Vite`
-
-Conserver `front/vercel.json`, qui gère le fallback SPA. Définir ces variables avant le build Vercel :
+Variables utilisées au build :
 
 ```text
-VITE_API_BASE_URL=https://<backend-public>/api
+VITE_API_BASE_URL=https://api-digit.etsgsm.org/api
 VITE_USE_MOCKS=false
 ```
 
-Reporter ensuite l'URL Vercel finale exacte dans `CORS_ALLOWED_ORIGINS` sur le VPS, puis redémarrer `back`. Il ne faut jamais employer `*` comme origine CORS de production.
+Redéployer le front après toute modification de ces variables.
 
-## Alternatives non utilisées
+## Vérification
 
-`Dockerfile.huggingface`, `deploy/start-huggingface.sh`, `deploy/huggingface/README.md` et `ia/scripts/push_models_to_hub.py` sont conservés pour une alternative Hugging Face précédente. Ils ne sont pas utilisés par l'architecture recommandée Vercel + VPS Plesk + Atlas. Le développement local reste inchangé : `docker compose up --build` lance front, back, ia et MongoDB local.
+```sh
+curl -f http://127.0.0.1:8086/api/health/
+curl -f http://127.0.0.1:8086/api/health/ready/
+curl -f https://api-digit.etsgsm.org/api/health/
+curl -f https://api-digit.etsgsm.org/api/health/ready/
+```
+
+La première route vérifie Django ; la seconde vérifie aussi que l'IA est joignable.
+Elles ne testent ni Atlas ni le chargement des modèles.
+Une prédiction suivie d'une correction depuis le frontend complète la vérification fonctionnelle.
