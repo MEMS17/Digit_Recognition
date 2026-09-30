@@ -1,6 +1,6 @@
 # Contrat API v1
 
-Statut : spécification à implémenter. Seul `GET /api/health/` existe actuellement. Les exemples ne constituent pas des résultats de modèles entraînés. Responsable : binôme back/IA ; consommateur : collaborateur front/déploiement.
+Statut : V1 implémentée. Les routes publiques de prédiction, de revue et de santé sont servies par Django ; l'inférence est déléguée au service FastAPI IA interne. Les exemples illustrent le contrat et ne constituent pas une promesse de taux de réussite. Responsable : binôme back/IA ; consommateur : collaborateur front/déploiement.
 
 ## Conventions
 
@@ -17,6 +17,14 @@ Les opérations de prédiction sont synchrones. Un `201 Created` signifie que l'
 ```
 
 Ce contrôle indique uniquement que le processus Django répond. Il ne garantit ni MongoDB disponible ni modèle chargé. Il ne faut pas l'utiliser pour annoncer au front que l'inférence est prête.
+
+`GET /api/health/ready/` retourne `200 OK` si Django répond et si le service IA interne est joignable :
+
+```json
+{"status":"ok","service":"back","ia":"reachable"}
+```
+
+Il retourne `503` avec `ia: "unavailable"` sinon. Cette route ne teste ni Atlas ni le chargement des modèles et n'expose aucun détail interne.
 
 ## Validation commune des images
 

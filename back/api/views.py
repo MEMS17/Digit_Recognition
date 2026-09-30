@@ -21,6 +21,18 @@ def health(request):
     return JsonResponse({"status": "ok", "service": "back"})
 
 
+@require_GET
+def readiness(request):
+    """Public readiness check without exposing internal service details."""
+    try:
+        response = httpx.get(f"{settings.IA_SERVICE_URL}/health", timeout=httpx.Timeout(2, connect=1))
+    except httpx.HTTPError:
+        response = None
+    if response is None or response.status_code != 200:
+        return JsonResponse({"status": "degraded", "service": "back", "ia": "unavailable"}, status=503)
+    return JsonResponse({"status": "ok", "service": "back", "ia": "reachable"})
+
+
 def _error(status, code, message):
     return JsonResponse({"error": {"code": code, "message": message, "fields": {}}}, status=status)
 

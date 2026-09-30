@@ -8,4 +8,4 @@ Les appels navigateur à `/api/` sont transmis au backend par le proxy Vite, san
 
 Commandes : `npm ci`, `npm run dev`, `npm run build`. Le build vérifie TypeScript et génère `dist/`.
 
-L’écran actuel est une page d’initialisation. Aucun OCR, modèle, import d’image ou endpoint de prédiction n’est implémenté. Les contrats API doivent être convenus avec le responsable backend avant d’intégrer les fonctionnalités.
+L’interface propose l’import d’une **zone postale recadrée** (PNG/JPEG, 5 MiB maximum), le dessin d’un chiffre, les résultats, la revue humaine et les états d’erreur. Elle utilise les mocks uniquement avec `VITE_USE_MOCKS=true`; avec `VITE_USE_MOCKS=false`, elle appelle l’API V1 via `/api/v1/predictions/`.

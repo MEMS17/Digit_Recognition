@@ -1,0 +1,28 @@
+FROM python:3.12-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app/back:/app/ia/src \
+    IA_SERVICE_URL=http://127.0.0.1:8001 \
+    HF_HOME=/tmp/hf_cache \
+    MODEL_ROOT=/app/models \
+    PORT=7860
+
+WORKDIR /app
+
+COPY back/requirements.txt /tmp/back-requirements.txt
+COPY ia/requirements.production.txt /tmp/ia-requirements.txt
+RUN pip install --no-cache-dir -r /tmp/back-requirements.txt -r /tmp/ia-requirements.txt gunicorn==23.0.0 \
+    && useradd --create-home --uid 1000 appuser \
+    && mkdir -p /app/models /tmp/hf_cache \
+    && chown -R appuser:appuser /app /tmp/hf_cache
+
+COPY --chown=appuser:appuser back /app/back
+COPY --chown=appuser:appuser ia/src /app/ia/src
+COPY --chown=appuser:appuser deploy/start-huggingface.sh /app/deploy/start-huggingface.sh
+RUN chmod 755 /app/deploy/start-huggingface.sh
+
+USER appuser
+EXPOSE 7860
+
+CMD ["/app/deploy/start-huggingface.sh"]

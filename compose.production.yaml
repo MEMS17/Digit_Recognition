@@ -1,28 +1,8 @@
+# Déploiement recommandé : Vercel + VPS Plesk + MongoDB Atlas.
+# Plesk/Nginx termine TLS et reverse-proxy vers le port local de Django.
 name: digit-recognition-production
 
 services:
-  front:
-    build:
-      context: .
-      dockerfile: front/Dockerfile.production
-      args:
-        VITE_USE_MOCKS: "false"
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ${TLS_CERT_PATH:?Set TLS_CERT_PATH to the certificate directory}:/etc/nginx/certs:ro
-    depends_on:
-      back:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost/healthz"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
-    restart: unless-stopped
-
   back:
     build:
       context: ./back
@@ -33,10 +13,29 @@ services:
       DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:?Set the public host name}
       MONGODB_URI: ${MONGODB_URI:?Set the MongoDB Atlas connection URI}
       MONGODB_DATABASE: ${MONGODB_DATABASE:-postal_ocr}
+      IA_SERVICE_URL: http://ia:8001
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-}
+    ports:
+      - "127.0.0.1:8086:8000"
+    depends_on:
+      ia:
+        condition: service_started
     healthcheck:
       test: ["CMD", "python", "-c", "from urllib.request import urlopen; urlopen('http://127.0.0.1:8000/api/health/', timeout=3)"]
       interval: 30s
       timeout: 5s
       retries: 3
       start_period: 15s
+    restart: unless-stopped
+
+  ia:
+    build:
+      context: ./ia
+      dockerfile: Dockerfile.production
+    environment:
+      PYTHONPATH: /app/src
+    volumes:
+      - ${MODEL_DIR_HOST:?Set MODEL_DIR_HOST to the artifact directory}:/app/models:ro
+    expose:
+      - "8001"
     restart: unless-stopped

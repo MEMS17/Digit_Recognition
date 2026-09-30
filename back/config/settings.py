@@ -11,9 +11,10 @@ ALLOWED_HOSTS = [
     if host.strip()
 ]
 
-INSTALLED_APPS = ["api"]
+INSTALLED_APPS = ["corsheaders", "api"]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
@@ -27,6 +28,18 @@ DATABASES = {}
 MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://mongo:27017/")
 MONGODB_DATABASE = os.getenv("MONGODB_DATABASE", "postal_ocr")
 IA_SERVICE_URL = os.getenv("IA_SERVICE_URL", "http://ia:8001")
+CORS_ALLOWED_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
+    if origin.strip()
+]
+
+# The Vercel application talks directly to Django. Origins are deliberately
+# explicit: production must never fall back to a wildcard.
+CORS_ALLOW_CREDENTIALS = False
+
+# Plesk/Nginx terminates HTTPS before forwarding traffic to Gunicorn.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 LANGUAGE_CODE = "fr-fr"
 TIME_ZONE = "Europe/Paris"

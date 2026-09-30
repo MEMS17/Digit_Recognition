@@ -12,16 +12,16 @@ Lire un code postal français de cinq chiffres sur une image de courrier. Conser
 - `docs/` : décisions, contrat API et planning commun.
 - `compose.yaml` : environnement Docker local partagé. Déploiement futur : collaborateur.
 
-Le front appelle `/api` ; Vite transmet au back sur le réseau Docker. MongoDB n'est pas exposé sur le poste. Le service IA écoute maintenant sur le port interne 8001, sans publication sur le poste : les dépendances scientifiques restent dans `ia/`, le back conserve l'API publique et la persistance. L'appel du service IA par le back sera la prochaine intégration.
+Le front appelle `/api` ; Vite transmet au back sur le réseau Docker. MongoDB n'est pas exposé sur le poste. Le service IA écoute sur le port interne 8001, sans publication sur le poste : le back conserve l'API publique et la persistance, puis appelle l'IA via `IA_SERVICE_URL`. En production recommandée, Vercel sert le front, un VPS Plesk héberge Django et l'IA interne, MongoDB Atlas remplace le conteneur local et les modèles sont montés en lecture seule depuis le VPS. L'ancienne configuration Hugging Face reste une alternative non utilisée, documentée dans [DEPLOYMENT.md](DEPLOYMENT.md).
 
-## Contrats de la prochaine réalisation
+## Contrats V1 implémentés
 
 - [API.md](API.md) : routes publiques, limites image, résultats, erreurs et correction.
 - [MONGODB.md](MONGODB.md) : types, index et import relançable des trois collections.
 - [EVALUATION.md](EVALUATION.md) : splits, comparaison des modèles et objectifs à mesurer.
 - [POSTAL_SCOPE.md](POSTAL_SCOPE.md) : courrier destinataire, corpus et scénarios d'acceptation.
 
-Ces documents décrivent un contrat v1 à implémenter, pas des fonctionnalités déjà disponibles. Seule la route de santé existe.
+Ces documents définissent le contrat V1 exploité par le front, Django et le service IA. La santé, les créations de prédiction et la revue humaine sont disponibles ; l'enveloppe complète reste explicitement hors du MVP.
 
 ### Frontière back / IA retenue
 

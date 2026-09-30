@@ -2,9 +2,10 @@
 
 Responsable : membre 1 (back et IA).
 
-Le dossier contient uniquement le socle API. Le code d'entraînement et
-d'inférence appartient à `../ia/`. Aucun modèle, import MNIST, endpoint de
-prédiction ou traitement d'enveloppe n'est implémenté à cette étape.
+Le code d'entraînement et d'inférence appartient à `../ia/`. Django expose
+les routes V1 de prédiction et de revue, conserve les résultats dans MongoDB
+et appelle FastAPI IA via `IA_SERVICE_URL`. Le MVP traite une zone postale
+déjà recadrée ; la localisation d'une enveloppe complète reste indisponible.
 
 Depuis la racine du dépôt, utiliser Docker Compose conformément au README
 principal. Le serveur Django de développement écoute sur `0.0.0.0:8000`.
@@ -12,7 +13,8 @@ Il devra être remplacé par un serveur de production pour le déploiement.
 
 ## Contrat disponible
 
-`GET /api/health/` retourne HTTP 200 :
+`GET /api/health/` retourne HTTP 200. Les routes V1 détaillées dans
+[`../docs/API.md`](../docs/API.md) sont également disponibles :
 
 ```json
 {"status": "ok", "service": "back"}

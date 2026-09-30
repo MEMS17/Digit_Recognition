@@ -11,6 +11,7 @@ import numpy as np
 import tensorflow as tf
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from PIL import Image, ImageOps
+from huggingface_hub import hf_hub_download
 
 from postal_ocr.postal_code_inference import (
     MODEL_PATH as MNIST_MODEL_PATH,
@@ -24,7 +25,11 @@ from postal_ocr.postal_code_inference import (
 MAX_FILE_BYTES = 5 * 1024 * 1024
 MAX_IMAGE_EDGE = 12_000
 MAX_IMAGE_PIXELS = 12_000_000
+MODEL_ROOT = Path(os.environ.get("MODEL_ROOT", "models"))
+MNIST_MODEL_PATH = Path(os.environ.get("MNIST_MODEL_PATH", str(MNIST_MODEL_PATH)))
 POSTAL_MODEL_PATH = Path(os.environ.get("POSTAL_MODEL_PATH", "models/postal_digit_synthetic_v1/postal_digit_cnn.keras"))
+MNIST_MODEL_FILENAME = os.environ.get("MNIST_MODEL_FILENAME", "mnist/cnn_tuned.keras")
+POSTAL_MODEL_FILENAME = os.environ.get("POSTAL_MODEL_FILENAME", "postal/postal_digit_cnn.keras")
 POSTAL_MODEL_VERSION = os.environ.get("POSTAL_MODEL_VERSION", "postal-digit-synthetic-v1")
 
 app = FastAPI(title="Postal OCR internal inference", docs_url=None, redoc_url=None, openapi_url=None)
@@ -37,16 +42,38 @@ class Models:
 
     def digit_model(self) -> tf.keras.Model:
         if self.digit is None:
-            self.digit = load_model(MNIST_MODEL_PATH)
+            self.digit = load_model(self._resolve_model(MNIST_MODEL_PATH, MNIST_MODEL_FILENAME))
         return self.digit
 
     def postal_model(self) -> tf.keras.Model:
         if self.postal is None:
-            self.postal = load_model(POSTAL_MODEL_PATH)
+            self.postal = load_model(self._resolve_model(POSTAL_MODEL_PATH, POSTAL_MODEL_FILENAME))
         return self.postal
+
+    @staticmethod
+    def _resolve_model(local_path: Path, hub_filename: str) -> Path:
+        if local_path.is_file():
+            return local_path
+        repository = os.getenv("HF_MODEL_REPO")
+        if not repository:
+            return local_path
+        return Path(
+            hf_hub_download(
+                repo_id=repository,
+                filename=hub_filename,
+                local_dir=str(MODEL_ROOT),
+                token=os.getenv("HF_TOKEN") or None,
+            )
+        )
 
 
 models = Models()
+
+
+@app.get("/health")
+async def health() -> dict[str, str]:
+    """Internal liveness endpoint; it does not load TensorFlow models."""
+    return {"status": "ok", "service": "ia"}
 
 
 def error(status_code: int, code: str, message: str) -> HTTPException:

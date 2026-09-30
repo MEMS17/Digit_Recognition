@@ -1,6 +1,6 @@
 # Digit Recognition — lecture de codes postaux
 
-Projet annuel : reconnaissance de chiffres manuscrits, puis lecture de codes postaux sur des courriers. **État : socle initialisé et cadrage technique v1 rédigé. Aucun modèle entraîné, aucune lecture d'image disponible.**
+Projet annuel : reconnaissance de chiffres manuscrits, puis lecture de codes postaux sur des courriers. Le dépôt contient une chaîne V1 : front React, API Django, service FastAPI IA et modèles expérimentés documentés. Le MVP lit une **zone postale déjà recadrée** ; la localisation automatique sur une enveloppe entière n'est pas encore disponible.
 
 ## Organisation
 
@@ -32,7 +32,7 @@ docker compose ps
 
 Ne recopier `.env.example` que lors de la première installation pour préserver les réglages existants. Les valeurs de secours permettent aussi un démarrage local sans `.env`.
 
-- Interface : http://localhost:5173
+- Interface : http://localhost:5173 (mocks activables par `VITE_USE_MOCKS=true`)
 - Santé API : http://localhost:8000/api/health/
 - Santé via proxy front : http://localhost:5173/api/health/
 
@@ -58,6 +58,4 @@ MongoDB local n'est exposé que sur le réseau Docker. Pour Atlas, renseigner `M
 
 Toi avec Codex : back et IA. Collaborateur : front et déploiement. Les agents travaillent dans des dossiers exclusifs, le coordinateur gère les fichiers communs. Les interfaces sont convenues avant les développements qui en dépendent. Aucun commit ni push automatique.
 
-Ce Compose est un environnement de développement ; la configuration de production est une étape dédiée. Les liens Trello, application déployée et présentation seront ajoutés lorsqu'ils existeront.
-
-**Point d'arrêt : attendre l'accord utilisateur avant l'import de données, l'entraînement ou le développement des fonctionnalités.**
+Ce Compose est un environnement de développement. La production recommandée est décrite dans [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) : Vercel pour le front, VPS Plesk pour Django et l'IA interne, fichiers modèles locaux sur le VPS et Atlas pour les données. La configuration Hugging Face est conservée comme alternative non utilisée.
