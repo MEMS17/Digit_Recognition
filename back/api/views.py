@@ -7,6 +7,7 @@ from django.conf import settings
 from django.http import JsonResponse
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.csrf import csrf_exempt
 from pymongo import MongoClient
 
 
@@ -49,11 +50,13 @@ def _infer(request, route, input_kind=None):
     return JsonResponse(document, status=201)
 
 
+@csrf_exempt
 @require_POST
 def predict_digit(request):
     return _infer(request, "/internal/v1/infer/digit/")
 
 
+@csrf_exempt
 @require_POST
 def predict_postal_code(request):
     input_kind = request.POST.get("input_kind")
