@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { useState } from 'react';
 import { ApiUnavailableError, recognizeDigit, recognizeMail } from './api/recognitionApi';
 import type { RecognitionResult } from './api/types';
@@ -48,3 +49,9 @@ export default function App() {
     </div>
   </main>;
 }
+=======
+import { useState, type FormEvent } from "react";
+export default function App() { const [file,setFile]=useState<File|null>(null); const [mode,setMode]=useState("postal"); const [out,setOut]=useState<any>(null); const [msg,setMsg]=useState("");
+ async function send(e:FormEvent){e.preventDefault();if(!file)return;const f=new FormData();f.append("image",file);if(mode==="postal")f.append("input_kind","crop");const url=mode==="postal"?"/api/v1/predictions/postal-code/":"/api/v1/predictions/digit/";const r=await fetch(url,{method:"POST",body:f});const b=await r.json();setOut(r.ok?b:null);setMsg(r.ok?"":b.error?.message)}
+ return <main><p className="eyebrow">Projet annuel · Reconnaissance de chiffres</p><h1>Lire les codes postaux manuscrits.</h1><p className="intro">Choisis un chiffre unique ou une zone postale recadrée.</p><section><h2>Analyser une image</h2><form onSubmit={send}><label>Type de lecture<select value={mode} onChange={e=>setMode(e.target.value)}><option value="digit">Chiffre unique</option><option value="postal">Code postal — cinq chiffres</option></select></label><input type="file" accept="image/png,image/jpeg" onChange={e=>setFile(e.target.files?.[0]??null)}/><button>{mode==="digit"?"Lire le chiffre":"Lire le code"}</button></form>{msg&&<p>{msg}</p>}{out&&<div><span className="badge">{out.status}</span><h2>{out.value??"Lecture impossible"}</h2><p>{out.reasons.join(", ")}</p></div>}</section></main> }
+>>>>>>> 3915b71 (feat(front): select digit or postal code recognition)
