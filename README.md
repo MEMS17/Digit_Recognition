@@ -105,5 +105,6 @@ Ces commandes s'exécutent explicitement : aucun entraînement ne démarre avec 
 - [API](docs/API.md)
 - [Résultats IA](docs/MODEL_RESULTS.md)
 - [Déploiement](docs/DEPLOYMENT.md)
+- [Présentation animée du projet](presentation/index.html)
 
 Gestion de projet : https://trello.com/b/jjTZnIxU
